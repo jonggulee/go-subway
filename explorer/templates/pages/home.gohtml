@@ -1,0 +1,15 @@
+{{define "home"}}
+<!DOCTYPE html>
+<html lang="en">
+{{template "head" .PageTitle}}
+<body>
+{{template "header" .StationName}}
+    <main style="margin: 0 auto; max-width: var(--width-content); padding: 1rem 1rem;">
+    {{range .Buses}}
+        {{template "bus" .}}
+    {{end}}
+    </main>
+    {{template "footer" .NowTime}}
+</body>
+</html>
+{{end}}
