@@ -15,6 +15,12 @@ const (
 	templateDir string = "explorer/templates/"
 )
 
+type PageData struct {
+	PageTitle   string
+	CurrentTime string
+	Station     []subway.Subway
+}
+
 var templates *template.Template
 
 func getNowTime() string {
@@ -25,17 +31,25 @@ func getNowTime() string {
 }
 
 func home(rw http.ResponseWriter, r *http.Request) {
+	stations := []string{"남위례", "복정"}
 	if r.URL.Path != "/" {
 		rw.WriteHeader(http.StatusNotFound)
 		return
 	}
 	kstTime := getNowTime()
-	data := subway.GetRealtimePosition()
+	var subwayStationData []subway.Subway
+	for _, station := range stations {
+		subwayStationArrivals := subway.GetRealtimeStationArrival(station)
+		subwayStationData = append(subwayStationData, subwayStationArrivals)
+	}
+
+	data := PageData{
+		PageTitle:   "Home",
+		CurrentTime: kstTime,
+		Station:     subwayStationData,
+	}
+
 	templates.ExecuteTemplate(rw, "home", data)
-
-	fmt.Println(kstTime)
-	fmt.Println(data)
-
 }
 
 func Start() {
@@ -43,8 +57,6 @@ func Start() {
 	templates = template.Must(template.ParseGlob(templateDir + "pages/*.gohtml"))
 	templates = template.Must(templates.ParseGlob(templateDir + "partials/*.gohtml"))
 	handler.HandleFunc("/", home)
-	// handler.HandleFunc("/jake", homeJake)
-	// handler.HandleFunc("/health", health)
 	fmt.Printf("Listening on http://localhost:%d\n", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), handler))
 }

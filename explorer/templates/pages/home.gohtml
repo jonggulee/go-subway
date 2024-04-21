@@ -3,13 +3,11 @@
 <html lang="en">
 {{template "head" .PageTitle}}
 <body>
-{{template "header" .StationName}}
+{{template "header" .PageTitle}}
     <main style="margin: 0 auto; max-width: var(--width-content); padding: 1rem 1rem;">
-    {{range .Buses}}
-        {{template "bus" .}}
-    {{end}}
+    {{template "subway" .}}
     </main>
-    {{template "footer" .NowTime}}
+    {{template "footer" .CurrentTime}}
 </body>
 </html>
 {{end}}

@@ -6,22 +6,23 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"strconv"
 )
 
 const (
-	realtimePosition = "realtimePosition"
-	resultType       = "json"
-	startIndex       = 1
-	endIndex         = 9
-	updnLine         = 0
-	encodedLine      = "8%ED%98%B8%EC%84%A0"
-	baseUrl          = "http://swopenapi.seoul.go.kr/api/subway"
+	realtimeStationArrival = "realtimeStationArrival"
+	resultType             = "json"
+	startIndex             = 0
+	endIndex               = 1
+	updnLine               = 0
+	baseUrl                = "http://swopenapi.seoul.go.kr/api/subway"
+	apiKey                 = "69515253776a6a6f3637664a744578"
+	statnBokjeong          = "복정"
+	statnNamwirye          = "남위례"
 )
 
 type JsonResponse struct {
-	ErrorMessage         ErrorMessage       `json:"errorMessage"`
-	RealtimePositionList []RealtimePosition `json:"realtimePositionList"`
+	ErrorMessage        ErrorMessage          `json:"errorMessage"`
+	RealtimeArrivalList []realtimeArrivalList `json:"realtimeArrivalList"`
 }
 
 type ErrorMessage struct {
@@ -33,51 +34,49 @@ type ErrorMessage struct {
 	Total            int    `json:"total"`
 }
 
-type RealtimePosition struct {
-	SubwayId     string `json:"subwayId"`
-	SubwayNm     string `json:"subwayNm"`
-	StatnId      string `json:"statnId"`
-	StatnNm      string `json:"statnNm"`
-	TrainNo      string `json:"trainNo"`
-	LastRecptnDt string `json:"lastRecptnDt"`
-	RecptnDt     string `json:"recptnDt"`
-	UpdnLine     string `json:"updnLine"`
-	StatnTid     string `json:"statnTid"`
-	StatnTnm     string `json:"statnTnm"`
-	TrainSttus   string `json:"trainSttus"`
-	DirectAt     string `json:"directAt"`
-	LstcarAt     string `json:"lstcarAt"`
+type realtimeArrivalList struct {
+	UpdnLine string `json:"updnLine"`
+	ArvlMsg2 string `json:"arvlMsg2"`
+	SubwayId string `json:"subwayId"`
 }
 
-func GetRealtimePosition() []RealtimePosition {
-	url := fmt.Sprintf("%s/%s/%s/%s/%d/%d/%s", baseUrl, apiKey, resultType, realtimePosition, startIndex, endIndex, encodedLine)
+type Subway struct {
+	SubwayNm string `json:"subwayNm"`
+	Statn    string `json:"statn"`
+	ArvlMsg  string `json:"arvlMsg"`
+}
 
+func GetRealtimeStationArrival(station string) Subway {
+	var subway Subway
+
+	url := fmt.Sprintf("%s/%s/%s/%s/%d/%d/%s", baseUrl, apiKey, resultType, realtimeStationArrival, startIndex, endIndex, station)
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Println("Error:", err)
-	}
+		log.Printf("Error fetching data for station %s: %v", station, err)
 
+	}
 	defer resp.Body.Close()
 
 	jsonData, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("Error:", err)
+		log.Printf("Error reading response body for station %s: %v", station, err)
 	}
 
 	var data JsonResponse
-	err = json.Unmarshal(jsonData, &data)
-	if err != nil {
-		fmt.Println("Error:", err)
+	if err := json.Unmarshal(jsonData, &data); err != nil {
+		log.Printf("Error unmarshalling JSON for station %s: %v", station, err)
 	}
 
-	var resultData []RealtimePosition
-	if data.ErrorMessage.Status == 200 {
-		for _, subway := range data.RealtimePositionList {
-			intStantId, _ := strconv.Atoi(subway.StatnId)
-			if subway.UpdnLine == "0" && intStantId >= 1008000821 {
-				resultData = append(resultData, subway)
+	for _, arrival := range data.RealtimeArrivalList {
+		if arrival.UpdnLine == "상행" {
+			if arrival.SubwayId == "1008" {
+				subway := Subway{SubwayNm: "8호선", Statn: station, ArvlMsg: arrival.ArvlMsg2}
+				return subway
+			} else if arrival.SubwayId == "1075" {
+				subway := Subway{SubwayNm: "수인분당선", Statn: station, ArvlMsg: arrival.ArvlMsg2}
+				return subway
 			}
 		}
 	}
-	return resultData
+	return subway
 }

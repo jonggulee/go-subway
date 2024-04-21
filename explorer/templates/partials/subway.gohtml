@@ -1,0 +1,12 @@
+{{define "subway"}}
+{{range .Station}}
+    <div>
+        <ul>
+            <li>지하철호선: {{.SubwayNm}}</li>
+            <li>지하철역명: {{.Statn}}</li>
+            <li>첫번째지하철: {{.ArvlMsg}}</li>
+        </ul>
+    </div>
+{{end}}
+<hr  />
+{{end}}
